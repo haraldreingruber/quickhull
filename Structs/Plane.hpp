@@ -8,14 +8,14 @@
 #ifndef QHPLANE_HPP_
 #define QHPLANE_HPP_
 
-#include "Vector3.hpp"
+#include <OgreVector3.h>
 
 namespace quickhull {
 
 	template<typename T>
 	class Plane {
 	public:
-		Vector3<T> m_N;
+		Ogre::Vector3 m_N;
 		
 		// Signed distance (if normal is of length 1) to the plane from origin
 		T m_D;
@@ -23,7 +23,7 @@ namespace quickhull {
 		// Normal length squared
 		T m_sqrNLength;
 
-		bool isPointOnPositiveSide(const Vector3<T>& Q) const {
+		bool isPointOnPositiveSide(const Ogre::Vector3& Q) const {
 			T d = m_N.dotProduct(Q)+m_D;
 			if (d>=0) return true;
 			return false;
@@ -32,7 +32,7 @@ namespace quickhull {
 		Plane() = default;
 
 		// Construct a plane using normal N and any point P on the plane
-		Plane(const Vector3<T>& N, const Vector3<T>& P) : m_N(N), m_D(-N.dotProduct(P)), m_sqrNLength(m_N.x*m_N.x+m_N.y*m_N.y+m_N.z*m_N.z) {
+		Plane(const Ogre::Vector3& N, const Ogre::Vector3& P) : m_N(N), m_D(-N.dotProduct(P)), m_sqrNLength(m_N.x*m_N.x+m_N.y*m_N.y+m_N.z*m_N.z) {
 			
 		}
 	};

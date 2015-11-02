@@ -8,7 +8,7 @@
 #ifndef CONVEXHULL_HPP_
 #define CONVEXHULL_HPP_
 
-#include "Structs/Vector3.hpp"
+#include <OgreVector3.h>
 #include "Structs/HalfEdgeMesh.hpp"
 #include <vector>
 #include <unordered_map>
@@ -18,13 +18,13 @@ namespace quickhull {
 
 	template<typename T>
 	class ConvexHull {
-		std::vector<Vector3<T>> m_vertices;
+		std::vector<Ogre::Vector3> m_vertices;
 		std::vector<size_t> m_indices;
 	public:
 		ConvexHull() {}
 
 		// Construct vertex and index buffers from half edge mesh and pointcloud
-		ConvexHull(const Mesh<T>& mesh, const std::vector<Vector3<T>>& pointCloud, bool CCW) {
+		ConvexHull(const Mesh<T>& mesh, const std::vector<Ogre::Vector3>& pointCloud, bool CCW) {
 			std::vector<bool> faceProcessed(mesh.m_faces.size(),false);
 			std::vector<size_t> faceStack;
 			std::unordered_map<size_t,size_t> vertexIndexMapping; // Map vertex indices from original point cloud to the new mesh vertex indices
@@ -87,7 +87,7 @@ namespace quickhull {
 			return m_indices;
 		}
 
-		std::vector<Vector3<T>>& getVertexBuffer() {
+		std::vector<Ogre::Vector3>& getVertexBuffer() {
 			return m_vertices;
 		}
 		

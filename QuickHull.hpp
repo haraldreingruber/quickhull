@@ -11,7 +11,7 @@
 #include <vector>
 #include <array>
 #include <limits>
-#include "Structs/Vector3.hpp"
+#include <OgreVector3.h>
 #include "Structs/Plane.hpp"
 #include "Structs/HalfEdgeMesh.hpp"
 #include "ConvexHull.hpp"
@@ -62,7 +62,7 @@ namespace quickhull {
 		static const T Epsilon;
 
 		T m_epsilon;
-		const std::vector<Vector3<T>>* m_vertexData;
+		const std::vector<Ogre::Vector3>* m_vertexData;
 		Mesh<T> m_mesh;
 		std::array<IndexType,6> m_extremeValues;
 
@@ -83,7 +83,7 @@ namespace quickhull {
 		bool reorderHorizonEdges(std::vector<IndexType>& horizonEdges);
 		
 		// Find indices of extreme values (max x, min x, max y, min y, max z, min z) for the given point cloud
-		std::array<IndexType,6> findExtremeValues(const std::vector<Vector3<T>>& vPositions);
+		std::array<IndexType,6> findExtremeValues(const std::vector<Ogre::Vector3>& vPositions);
 
 		// This will update m_mesh from which we create the ConvexHull object that getConvexHull function returns
 		void createConvexHalfEdgeMesh();
@@ -92,7 +92,7 @@ namespace quickhull {
 		// Params:
 		//   pointCloud: a list of 3D points
 		//   CCW: whether the output mesh triangles should have CCW orientation
-		ConvexHull<T> getConvexHull(const std::vector<Vector3<T>>& pointCloud, bool CCW);
+		ConvexHull<T> getConvexHull(const std::vector<Ogre::Vector3>& pointCloud, bool CCW);
 	};
 
 }

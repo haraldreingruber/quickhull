@@ -22,7 +22,7 @@ namespace quickhull {
 	 */
 
 	template<typename T>
-	ConvexHull<T> QuickHull<T>::getConvexHull(const std::vector<Vector3<T>>& pointCloud, bool CCW) {
+	ConvexHull<T> QuickHull<T>::getConvexHull(const std::vector<Ogre::Vector3>& pointCloud, bool CCW) {
 		if (pointCloud.size()==0) {
 			return ConvexHull<T>();
 		}
@@ -30,9 +30,9 @@ namespace quickhull {
 
 		// Very first: find extreme values and use them to compute the scale of the point cloud.
 		m_extremeValues = findExtremeValues(pointCloud);
-		const Vector3<T> maxs(pointCloud[m_extremeValues[0]].x,pointCloud[m_extremeValues[2]].y,pointCloud[m_extremeValues[4]].z);
-		const Vector3<T> mins(pointCloud[m_extremeValues[1]].x,pointCloud[m_extremeValues[3]].y,pointCloud[m_extremeValues[5]].z);
-		const T scale = std::max(mins.getLength(),maxs.getLength());
+		const Ogre::Vector3 maxs(pointCloud[m_extremeValues[0]].x,pointCloud[m_extremeValues[2]].y,pointCloud[m_extremeValues[4]].z);
+		const Ogre::Vector3 mins(pointCloud[m_extremeValues[1]].x,pointCloud[m_extremeValues[3]].y,pointCloud[m_extremeValues[5]].z);
+		const T scale = std::max(mins.length(),maxs.length());
 		
 		// Epsilon we use depends on the scale
 		m_epsilon = Epsilon*scale;
@@ -105,7 +105,7 @@ namespace quickhull {
 			}
 			
 			// Pick the most distant point to this triangle plane as the point to which we extrude
-			const Vector3<T>& activePoint = pointCloud[tf.m_mostDistantPoint];
+			const Ogre::Vector3& activePoint = pointCloud[tf.m_mostDistantPoint];
 			const size_t activePointIndex = tf.m_mostDistantPoint;
 
 			// Find out the faces that have our active point on their positive side (these are the "visible faces"). The face on top of the stack of course is one of them. At the same time, we create a list of horizon edges.
@@ -230,7 +230,7 @@ namespace quickhull {
 
 				auto& newFace = m_mesh.m_faces[newFaceIndex];
 
-				const Vector3<T> planeNormal = mathutils::getTriangleNormal(pointCloud[A],pointCloud[B],activePoint);
+				const Ogre::Vector3 planeNormal = mathutils::getTriangleNormal<float>(pointCloud[A],pointCloud[B],activePoint);
 				newFace.m_P = Plane<T>(planeNormal,activePoint);
 				newFace.m_he = AB;
 
@@ -286,12 +286,12 @@ namespace quickhull {
 	 
 	template<typename T>
 	ConvexHull<T> QuickHull<T>::checkDegenerateCase0D() {
-		const std::vector<Vector3<T>>& pointCloud = *m_vertexData;
+		const std::vector<Ogre::Vector3>& pointCloud = *m_vertexData;
 
 		// 0D degenerate case: all points are at the same location
-		const Vector3<T>& v0 = *pointCloud.begin();
+		const Ogre::Vector3& v0 = *pointCloud.begin();
 		for (const auto& v : pointCloud) {
-			T d = (v-v0).getLengthSquared();
+			T d = (v-v0).squaredLength();
 			if (d>m_epsilon*m_epsilon) {
 				return ConvexHull<T>();
 			}
@@ -314,13 +314,13 @@ namespace quickhull {
 
 	template <typename T>
 	ConvexHull<T> QuickHull<T>::checkDegenerateCase1D() {
-		const std::vector<Vector3<T>>& vertices = *m_vertexData;
+		const std::vector<Ogre::Vector3>& vertices = *m_vertexData;
 
 		// 1D degenerate case: the points form a line in 3D space. To keep things simple, we translate the points so that the first point resides at the origin. This way, if the points do actually form a line, we have a line passing through the origin.
-		const Vector3<T>* firstPoint = nullptr;
+		const Ogre::Vector3* firstPoint = nullptr;
 		T firstPointLengthSquared=0;
-		const Vector3<T>* maxPoint = nullptr;
-		const Vector3<T>* minPoint = nullptr;
+		const Ogre::Vector3* maxPoint = nullptr;
+		const Ogre::Vector3* minPoint = nullptr;
 		const T epsilonSquared = m_epsilon*m_epsilon;
 		T maxDot = -1.0f;
 		T minDot = 1.0f;
@@ -329,9 +329,9 @@ namespace quickhull {
 		for (const auto& v : vertices) {
 			const auto v2 = v-vertices[0];
 			if (firstPoint == nullptr) {
-				if (v2.getLengthSquared() > epsilonSquared) {
+				if (v2.squaredLength() > epsilonSquared) {
 					firstPoint = &v;
-					firstPointLengthSquared = v2.getLengthSquared();
+					firstPointLengthSquared = v2.squaredLength();
 					break;
 				}
 			}
@@ -342,8 +342,8 @@ namespace quickhull {
 		for (const auto& v : vertices) {
 			const auto v2 = v-vertices[0];
 			const T dot = v2.dotProduct(*firstPoint-vertices[0]);
-			if (v2.getLengthSquared()>epsilonSquared) {
-				const T V = dot*dot/(v2.getLengthSquared()*firstPointLengthSquared);
+			if (v2.squaredLength()>epsilonSquared) {
+				const T V = dot*dot/(v2.squaredLength()*firstPointLengthSquared);
 				const T d = std::abs(V-1);
 				if (d > Epsilon) {
 					// The points do not form a line!
@@ -364,7 +364,7 @@ namespace quickhull {
 #ifdef DEBUG
 		std::cout << "Detected 1D degenerate case: the point cloud forms a line between " << *minPoint << " and " << *maxPoint << std::endl;
 #endif
-		const Vector3<T>* thirdPoint = nullptr;
+		const Ogre::Vector3* thirdPoint = nullptr;
 		for (const auto& v : vertices) {
 			if (&v != minPoint && &v != maxPoint) {
 				thirdPoint = &v;
@@ -384,26 +384,26 @@ namespace quickhull {
 
 	template<typename T>
 	ConvexHull<T> QuickHull<T>::checkDegenerateCase2D() {
-		const std::vector<Vector3<T>>& pointCloud = *m_vertexData;
+		const std::vector<Ogre::Vector3>& pointCloud = *m_vertexData;
 
 		// 2D degenerate case: all points lie on the same plane. Just like in the 1D case, we translate the points so that the first point is located at the origin.
 		const T epsilonSquared = m_epsilon*m_epsilon;
 
 		// Find two points not lying at the origin and not pointing to the same direction (there must be at least two, for otherwise the 0D or 1D cases would have generated the convex hull)
-		const Vector3<T>* firstPoint = nullptr;
-		const Vector3<T>* secondPoint = nullptr;
+		const Ogre::Vector3* firstPoint = nullptr;
+		const Ogre::Vector3* secondPoint = nullptr;
 		T firstPointLengthSquared = 0.0f;
 		for (const auto& v : pointCloud) {
 			const auto& vt = v-pointCloud[0];
-			if (vt.getLengthSquared()>epsilonSquared) {
+			if (vt.squaredLength()>epsilonSquared) {
 				if (firstPoint == nullptr) {
 					firstPoint = &v;
-					firstPointLengthSquared = vt.getLengthSquared();
+					firstPointLengthSquared = vt.squaredLength();
 					continue;
 				}
 
 				const T dot = vt.dotProduct(*firstPoint - pointCloud[0]);
-				const T V = dot*dot/(vt.getLengthSquared()*firstPointLengthSquared);
+				const T V = dot*dot/(vt.squaredLength()*firstPointLengthSquared);
 				const T d = std::abs(V-1);
 				if (d > Epsilon) {
 					secondPoint = &v;
@@ -414,7 +414,7 @@ namespace quickhull {
 		}
 		assert(firstPoint != nullptr && secondPoint != nullptr);
 		// Now firstPoint and secondPoint define a plane. Its normal is their cross product.
-		const Vector3<T> cross = (*firstPoint-pointCloud[0]).crossProduct(*secondPoint-pointCloud[0]).getNormalized();
+		const Ogre::Vector3 cross = (*firstPoint-pointCloud[0]).crossProduct(*secondPoint-pointCloud[0]).normalisedCopy();
 		for (const auto& v : pointCloud) {
 			const auto& vt = v-pointCloud[0];
 			const T d = std::abs(vt.dotProduct(cross));
@@ -442,7 +442,7 @@ namespace quickhull {
 			auto& face = m_mesh.m_faces[i];
 			if (!face.isDisabled()) {
 				auto v = m_mesh.getVertexIndicesOfFace(face);
-				if ((newPoints[v[0]]-extraPoint).getLengthSquared()<M/4 || (newPoints[v[1]]-extraPoint).getLengthSquared()<M/4 || (newPoints[v[2]]-extraPoint).getLengthSquared()<M/4) {
+				if ((newPoints[v[0]]-extraPoint).squaredLength()<M/4 || (newPoints[v[1]]-extraPoint).squaredLength()<M/4 || (newPoints[v[2]]-extraPoint).squaredLength()<M/4) {
 					disableList.push_back(i);
 				}
 			}
@@ -458,12 +458,12 @@ namespace quickhull {
 	 */
 
 	template <typename T>
-	std::array<IndexType,6> QuickHull<T>::findExtremeValues(const std::vector<Vector3<T>>& vPositions) {
+	std::array<IndexType,6> QuickHull<T>::findExtremeValues(const std::vector<Ogre::Vector3>& vPositions) {
 		std::array<IndexType,6> outIndices{0,0,0,0,0,0};
 		T extremeVals[6] = {vPositions[0].x,vPositions[0].x,vPositions[0].y,vPositions[0].y,vPositions[0].z,vPositions[0].z};
 		const size_t vCount = vPositions.size();
 		for (size_t i=1;i<vCount;i++) {
-			const Vector3<T>& pos = vPositions[i];
+			const Ogre::Vector3& pos = vPositions[i];
 			if (pos.x>extremeVals[0]) {
 				extremeVals[0]=pos.x;
 				outIndices[0]=(IndexType)i;
@@ -524,7 +524,7 @@ namespace quickhull {
 		std::pair<IndexType,IndexType> selectedPoints;
 		for (size_t i=0;i<6;i++) {
 			for (size_t j=i+1;j<6;j++) {
-				const T d = vertices[ m_extremeValues[i] ].getSquaredDistanceTo( vertices[ m_extremeValues[j] ] );
+				const T d = vertices[ m_extremeValues[i] ].squaredDistance( vertices[ m_extremeValues[j] ] );
 				if (d > maxD) {
 					maxD=d;
 					selectedPoints=std::pair<IndexType,IndexType>(m_extremeValues[i],m_extremeValues[j]);
@@ -549,12 +549,12 @@ namespace quickhull {
 
 		// These three points form the base triangle for our tetrahedron.
 		std::array<IndexType,3> baseTriangle{selectedPoints.first, selectedPoints.second, maxI};
-		const Vector3<T> baseTriangleVertices[]={ vertices[baseTriangle[0]], vertices[baseTriangle[1]],  vertices[baseTriangle[2]] };
+		const Ogre::Vector3 baseTriangleVertices[]={ vertices[baseTriangle[0]], vertices[baseTriangle[1]],  vertices[baseTriangle[2]] };
 		
 		// Next step is to find the 4th vertex of the tetrahedron. We naturally choose the point farthest away from the triangle plane.
 		maxD=0.0f;
 		maxI = 0;
-		const Vector3<T> N = mathutils::getTriangleNormal(baseTriangleVertices[0],baseTriangleVertices[1],baseTriangleVertices[2]);
+		const Ogre::Vector3 N = mathutils::getTriangleNormal<float>(baseTriangleVertices[0],baseTriangleVertices[1],baseTriangleVertices[2]);
 		Plane<T> trianglePlane(N,baseTriangleVertices[0]);
 		for (size_t i=0;i<vCount;i++) {
 			const T d = std::abs(mathutils::getSignedDistanceToPlane(vertices[i],trianglePlane));
@@ -575,10 +575,10 @@ namespace quickhull {
 		Mesh<T> mesh(baseTriangle[0],baseTriangle[1],baseTriangle[2],maxI);
 		for (auto& f : mesh.m_faces) {
 			auto v = mesh.getVertexIndicesOfFace(f);
-			const Vector3<T>& va = vertices[v[0]];
-			const Vector3<T>& vb = vertices[v[1]];
-			const Vector3<T>& vc = vertices[v[2]];
-			const Vector3<T> N = mathutils::getTriangleNormal(va, vb, vc);
+			const Ogre::Vector3& va = vertices[v[0]];
+			const Ogre::Vector3& vb = vertices[v[1]];
+			const Ogre::Vector3& vc = vertices[v[2]];
+			const Ogre::Vector3 N = mathutils::getTriangleNormal<float>(va, vb, vc);
 			const Plane<T> trianglePlane(N,va);
 			f.m_P = trianglePlane;
 		}

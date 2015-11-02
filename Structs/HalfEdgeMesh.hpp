@@ -9,7 +9,7 @@
 #define HALFEDGEMESH_HPP_
 
 #include <vector>
-#include "Vector3.hpp"
+#include <OgreVector3.h>
 #include "Plane.hpp"
 #include "../Types.hpp"
 #include <string>
